@@ -1,0 +1,556 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jan 27 18:01:18 2018
+
+@author: Chanda
+"""
+
+import numpy as np
+import pandas as pd
+from sklearn import datasets, linear_model
+from matplotlib import pyplot as plt
+from sklearn.metrics import mean_squared_error, r2_score
+import matplotlib.gridspec as GridSpec
+from sklearn import model_selection
+from sklearn.cross_validation import KFold
+
+
+boston = datasets.load_boston()
+df = pd.DataFrame(boston.data)
+y = boston.target
+X=boston.data
+
+train_error=[]
+test_error=[]
+R2_score=[]
+
+
+train_size=[.5,.6,.7,.8,.9,.95,.99]
+for x in train_size:
+    boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+    boston_reg = linear_model.LinearRegression(normalize=True)
+    boston_reg.fit(boston_X_train,boston_y_train)
+    boston_y_test_pred = boston_reg.predict(boston_X_test)
+    boston_y_train_pred = boston_reg.predict(boston_X_train)
+    train_error.append(mean_squared_error(boston_y_train, boston_y_train_pred))
+    test_error.append(mean_squared_error(boston_y_test, boston_y_test_pred))
+    R2_score.append(r2_score(boston_y_train, boston_y_train_pred))
+plt.plot(train_size, train_error , color='blue',marker='.', label='Training Error')
+plt.xlabel('Training Samples[0-1]')
+plt.ylabel('Error')
+plt.plot(train_size, test_error, color='red', marker='.' ,label='Test Error')
+plt.title('Plot of training error and test error with given training samples on boston dataset', fontsize=15, color='k')
+plt.legend()
+plt.show()
+
+
+plt.scatter(train_size, R2_score, color='black', label='R2 Score')
+plt.title('Plot of R2 Score with training samples on boston dataset', fontsize=15, color='k')
+plt.xlabel('Training Samples[0-1]')
+plt.ylabel('R2-Score')
+plt.legend()
+plt.show()
+
+the_grid=GridSpec.GridSpec(2,4)
+#fig = plt.figure(1)
+#gs1 = GridSpec.GridSpec(2,4)
+#ax_list = [fig.add_subplot(ss) for ss in gs1]
+#print(ax_list)
+fig=plt.figure(figsize=(15,7))
+alpha=[0,0.01,0.1,1]
+i=0
+for a in alpha:
+    train_error=[]
+    test_error=[]
+    train_size=[.5,.6,.7,.8,.9,.95,.99]
+    for x in train_size:
+        boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(df, y, test_size=1-x)
+#        print(type(boston_X_train))
+#        print(type(boston_y_train))
+#        print(boston_X_train, boston_y_train)
+        boston_reg = linear_model.Ridge(alpha=a, normalize=True)
+        boston_reg.fit(boston_X_train,boston_y_train)
+        boston_y_test_pred = boston_reg.predict(boston_X_test)
+        boston_y_train_pred = boston_reg.predict(boston_X_train)
+        train_error.append(mean_squared_error(boston_y_train, boston_y_train_pred))
+        test_error.append(mean_squared_error(boston_y_test, boston_y_test_pred))
+    
+    plt.subplot(the_grid[0,i])
+    plt.ylim((0,8000))
+    plt.suptitle('Training Error, Test Error and R2 Score wrt Training Samples on boston dataset', fontsize=15)
+    plt.plot(train_size, train_error , color='blue',marker='.', label='Training Error')
+    plt.plot(train_size, test_error, color='red', marker='.',label='Test Error')
+    plt.ylabel('Error')
+    plt.xlabel('Training Data[0-1]')
+    plt.title('Alpha=%1.2f' %a)
+    plt.legend()    
+    i=i+1
+
+        
+        
+fig=plt.figure(figsize=(15,7))
+alpha=[0,0.01,0.1,1]
+i=0
+for a in alpha:
+    R2_score=[]
+    train_size=[.5,.6,.7,.8,.9,.95,.99]
+    for x in train_size:
+        boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(df, y, test_size=1-x)
+        boston_reg = linear_model.Ridge(alpha=a, normalize=True)
+        boston_reg.fit(boston_X_train,boston_y_train)
+        boston_y_test_pred = boston_reg.predict(boston_X_test)
+        boston_y_train_pred = boston_reg.predict(boston_X_train)
+        R2_score.append(r2_score(boston_y_train, boston_y_train_pred))
+    plt.subplot(the_grid[1,i])
+    plt.ylim((0,1))
+    plt.scatter(train_size, R2_score, color='black', label='R2 Score')
+    plt.xlabel('Training Data[0-1]')
+    plt.ylabel('R2-Score')
+    plt.title('Alpha=%1.2f' %a)
+
+    plt.legend()
+    i=i+1
+#plt.legend()
+               
+        
+#################################Question 2
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    error=[]
+    valid_error=[]
+    alpha=[0.0,0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]        
+    for a in alpha:
+        boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+#        print(boston_X_train.shape)
+#        print(boston_y_train.shape)
+        boston_reg = linear_model.Ridge(alpha=a, normalize=True)
+#        cv = KFold(n_samples, n_folds=5, shuffle=False)
+#        boston_reg=linear_model.RidgeCV(alpha, normalize=False, fit_intercept=True, cv=5, store_cv_values=True  )
+        #With cv=5 and store_cv_values=True getting incompatible results, So using cross_validate function to cross_validate it.
+        boston_reg.fit(boston_X_train,boston_y_train)
+        boston_y_test_pred = boston_reg.predict(boston_X_test)
+        boston_y_train_pred = boston_reg.predict(boston_X_train)
+        train_error.append(mean_squared_error(boston_y_train, boston_y_train_pred))
+        test_error.append(mean_squared_error(boston_y_test, boston_y_test_pred))
+        kf=KFold(n=len(boston_X_train), n_folds=5, shuffle=True)
+#        print (kf)
+        mse=0
+        for train_indices, test_indices in kf:
+            boston_reg.fit(boston_X_train[train_indices], boston_y_train[train_indices])
+            mse=mse+mean_squared_error(boston_y_train[test_indices], boston_reg.predict(boston_X_train[test_indices]))
+#            valid_error.append(mse)
+        valid_error.append(np.mean(mse)/5)
+#        
+        
+#        cv_results=model_selection.cross_validate(boston_reg, boston_X_train, boston_y_train, cv=5)
+#        error.append(cv_results['test_score'])
+#        valid_error.append(np.mean(error))
+#    print(valid_error)
+    plt.subplot(the_grid[0,i])
+    plt.ylim((0,8000))
+    plt.suptitle('Training Error, Test Error, Validation Error and R2 Score wrt Alpha (Ridge Regression) on boston', fontsize=15)
+    plt.plot(alpha, train_error , 'b',marker='.', label='Training Error')
+    plt.plot(alpha, test_error, 'r', marker='.', label='Test Error')
+    plt.plot(alpha, valid_error, 'r--' ,marker='.', linewidth=2, label='Validation Error')
+    plt.xlabel('Alpha')
+    plt.ylabel('Error')
+    plt.legend()
+    plt.title('Training Data=%2.2f' %x)
+    i=i+1
+
+
+        
+#print(boston_X_train)
+        
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    R2_score=[]
+    alpha=[0.0,0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]    
+    for a in alpha:
+        boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+        boston_reg = linear_model.Ridge(alpha=a, normalize=True)
+        boston_reg.fit(boston_X_train,boston_y_train)
+        boston_y_test_pred = boston_reg.predict(boston_X_test)
+        boston_y_train_pred = boston_reg.predict(boston_X_train)
+        R2_score.append(r2_score(boston_y_train, boston_y_train_pred))
+    plt.subplot(the_grid[1,i])
+    plt.ylim((0,1))
+    
+    plt.scatter(alpha, R2_score, color='black', label='R2 Score')
+    plt.xlabel('Alpha')
+    plt.ylabel('R2 Score')
+    
+    plt.title('Training Data=%2.2f' %x)
+    plt.legend()
+    i=i+1
+#plt.legend()
+               
+        
+########################Question 3
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    error=[]
+    valid_error=[]
+    alpha=[0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]    
+    for a in alpha:
+        boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+        boston_reg = linear_model.Lasso(alpha=a, normalize=True)
+        boston_reg.fit(boston_X_train,boston_y_train)
+        boston_y_test_pred = boston_reg.predict(boston_X_test)
+        boston_y_train_pred = boston_reg.predict(boston_X_train)
+        train_error.append(mean_squared_error(boston_y_train, boston_y_train_pred))
+        test_error.append(mean_squared_error(boston_y_test, boston_y_test_pred))
+        kf=KFold(n=len(boston_X_train), n_folds=5, shuffle=True)
+#        print (kf)
+        mse=0
+        for train_indices, test_indices in kf:
+            #print(boston_X_train.shape, boston_X_test.shape, boston_y_train.shape, boston_y_test.shape)
+            #print(train_indices.shape,train_indices.shape)
+            boston_reg.fit(boston_X_train[train_indices], boston_y_train[train_indices])
+            #break
+            mse=mse+mean_squared_error(boston_y_train[test_indices], boston_reg.predict(boston_X_train[test_indices]))
+#        valid_error.append(mse)
+        valid_error.append(np.mean(mse)/5)
+        ###With Cross Validation
+#        cv_results=model_selection.cross_validate(boston_reg, boston_X_train, boston_y_train, cv=5)
+#        error.append(cv_results['test_score'])
+#        valid_error.append(np.mean(error))
+#        error.append(model_selection.cross_val_score(boston_reg, boston_X_train, boston_y_train, cv=5))    
+#        valid_error.append(1-np.mean(error))
+    
+    plt.subplot(the_grid[0,i])
+    plt.ylim((0,8000))
+    plt.suptitle('Training Error, Test Error, Validation Error and R2 Score wrt Alpha(LAsso Regression) on boston', fontsize=15)
+    plt.plot(alpha, train_error , color='blue',marker='.', label='Training Error')
+    plt.plot(alpha, test_error, color='red', marker='.',label='Test Error')
+    plt.plot(alpha, valid_error, 'r--', marker='.', label='Validation Error')
+    plt.xlabel('Alphas')
+    plt.ylabel('Error')
+    plt.title('Training=%2.2f' %x)
+    plt.legend()    
+    i=i+1
+
+        
+        
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    R2_score=[]
+    alpha=[0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]    
+    for a in alpha:
+        boston_X_train, boston_X_test, boston_y_train, boston_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+        boston_reg = linear_model.Lasso(alpha=a, normalize=True)
+        boston_reg.fit(boston_X_train,boston_y_train)
+        boston_y_test_pred = boston_reg.predict(boston_X_test)
+        boston_y_train_pred = boston_reg.predict(boston_X_train)
+        R2_score.append(r2_score(boston_y_train, boston_y_train_pred))
+    
+    plt.subplot(the_grid[1,i])
+    plt.ylim((0,1))
+    plt.scatter(alpha, R2_score, color='black', label='R2 Score')
+    plt.xlabel('Alphas')
+    plt.ylabel('R2 Score')
+    plt.legend()
+    plt.title('Training=%2.2f' %x)
+    i=i+1
+
+#####################################################################################################diabetes##########################################################################################################################################################################################################################
+
+diabetes= datasets.load_diabetes()
+df = pd.DataFrame(diabetes.data)
+y = diabetes.target
+X=diabetes.data
+
+train_error=[]
+test_error=[]
+R2_score=[]
+
+
+train_size=[.5,.6,.7,.8,.9,.95,.99]
+for x in train_size:
+    diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+    diabetes_reg = linear_model.LinearRegression(normalize=True)
+    diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+    diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+    diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+    train_error.append(mean_squared_error(diabetes_y_train, diabetes_y_train_pred))
+    test_error.append(mean_squared_error(diabetes_y_test, diabetes_y_test_pred))
+    R2_score.append(r2_score(diabetes_y_train, diabetes_y_train_pred))
+plt.plot(train_size, train_error , color='blue',marker='.', label='Training Error')
+plt.xlabel('Training Samples[0-1]')
+plt.ylabel('Error')
+plt.plot(train_size, test_error, color='red', marker='.' ,label='Test Error')
+plt.title('Plot of training error and test error with given training samples on diabetesdataset', fontsize=15, color='k')
+plt.legend()
+plt.show()
+
+
+plt.scatter(train_size, R2_score, color='black', label='R2 Score')
+plt.title('Plot of R2 Score with training samples on diabetesdataset', fontsize=15, color='k')
+plt.xlabel('Training Samples[0-1]')
+plt.ylabel('R2-Score')
+plt.legend()
+plt.show()
+
+the_grid=GridSpec.GridSpec(2,4)
+#fig = plt.figure(1)
+#gs1 = GridSpec.GridSpec(2,4)
+#ax_list = [fig.add_subplot(ss) for ss in gs1]
+#print(ax_list)
+fig=plt.figure(figsize=(15,7))
+alpha=[0,0.01,0.1,1]
+i=0
+for a in alpha:
+    train_error=[]
+    test_error=[]
+    train_size=[.5,.6,.7,.8,.9,.95,.99]
+    for x in train_size:
+        diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(df, y, test_size=1-x)
+#        print(type(diabetes_X_train))
+#        print(type(diabetes_y_train))
+#        print(diabetes_X_train, diabetes_y_train)
+        diabetes_reg = linear_model.Ridge(alpha=a, normalize=True)
+        diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+        diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+        diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+        train_error.append(mean_squared_error(diabetes_y_train, diabetes_y_train_pred))
+        test_error.append(mean_squared_error(diabetes_y_test, diabetes_y_test_pred))
+    
+    plt.subplot(the_grid[0,i])
+    plt.ylim((0,8000))
+    plt.suptitle('Training Error, Test Error and R2 Score wrt Training Samples on diabetesdataset', fontsize=15)
+    plt.plot(train_size, train_error , color='blue',marker='.', label='Training Error')
+    plt.plot(train_size, test_error, color='red', marker='.',label='Test Error')
+    plt.ylabel('Error')
+    plt.xlabel('Training Data[0-1]')
+    plt.title('Alpha=%1.2f' %a)
+    plt.legend()    
+    i=i+1
+
+        
+        
+fig=plt.figure(figsize=(15,7))
+alpha=[0,0.01,0.1,1]
+i=0
+for a in alpha:
+    R2_score=[]
+    train_size=[.5,.6,.7,.8,.9,.95,.99]
+    for x in train_size:
+        diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(df, y, test_size=1-x)
+        diabetes_reg = linear_model.Ridge(alpha=a, normalize=True)
+        diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+        diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+        diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+        R2_score.append(r2_score(diabetes_y_train, diabetes_y_train_pred))
+    plt.subplot(the_grid[1,i])
+    plt.ylim((0,1))
+    plt.scatter(train_size, R2_score, color='black', label='R2 Score')
+    plt.xlabel('Training Data[0-1]')
+    plt.ylabel('R2-Score')
+    plt.title('Alpha=%1.2f' %a)
+
+    plt.legend()
+    i=i+1
+#plt.legend()
+               
+        
+#################################Question 2
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    error=[]
+    valid_error=[]
+    alpha=[0.0,0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]        
+    for a in alpha:
+        diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+#        print(diabetes_X_train.shape)
+#        print(diabetes_y_train.shape)
+        diabetes_reg = linear_model.Ridge(alpha=a, normalize=True)
+#        cv = KFold(n_samples, n_folds=5, shuffle=False)
+#        diabetes_reg=linear_model.RidgeCV(alpha, normalize=False, fit_intercept=True, cv=5, store_cv_values=True  )
+        #With cv=5 and store_cv_values=True getting incompatible results, So using cross_validate function to cross_validate it.
+        diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+        diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+        diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+        train_error.append(mean_squared_error(diabetes_y_train, diabetes_y_train_pred))
+        test_error.append(mean_squared_error(diabetes_y_test, diabetes_y_test_pred))
+        kf=KFold(n=len(diabetes_X_train), n_folds=5, shuffle=True)
+#        print (kf)
+        mse=0
+        for train_indices, test_indices in kf:
+            diabetes_reg.fit(diabetes_X_train[train_indices], diabetes_y_train[train_indices])
+            mse=mse+mean_squared_error(diabetes_y_train[test_indices], diabetes_reg.predict(diabetes_X_train[test_indices]))
+#            valid_error.append(mse)
+        valid_error.append(np.mean(mse)/5)
+#        
+        
+#        cv_results=model_selection.cross_validate(diabetes_reg, diabetes_X_train, diabetes_y_train, cv=5)
+#        error.append(cv_results['test_score'])
+#        valid_error.append(np.mean(error))
+#    print(valid_error)
+    plt.subplot(the_grid[0,i])
+    plt.ylim((0,8000))
+    plt.suptitle('Training Error, Test Error, Validation Error and R2 Score wrt Alpha (Ridge Regression) on diabetes', fontsize=15)
+    plt.plot(alpha, train_error , 'b',marker='.', label='Training Error')
+    plt.plot(alpha, test_error, 'r', marker='.', label='Test Error')
+    plt.plot(alpha, valid_error, 'r--' ,marker='.', linewidth=2, label='Validation Error')
+    plt.xlabel('Alpha')
+    plt.ylabel('Error')
+    plt.legend()
+    plt.title('Training Data=%2.2f' %x)
+    i=i+1
+
+
+        
+#print(diabetes_X_train)
+        
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    R2_score=[]
+    alpha=[0.0,0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]    
+    for a in alpha:
+        diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+        diabetes_reg = linear_model.Ridge(alpha=a, normalize=True)
+        diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+        diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+        diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+        R2_score.append(r2_score(diabetes_y_train, diabetes_y_train_pred))
+    plt.subplot(the_grid[1,i])
+    plt.ylim((0,1))
+    
+    plt.scatter(alpha, R2_score, color='black', label='R2 Score')
+    plt.xlabel('Alpha')
+    plt.ylabel('R2 Score')
+    
+    plt.title('Training Data=%2.2f' %x)
+    plt.legend()
+    i=i+1
+#plt.legend()
+               
+        
+########################Question 3
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    error=[]
+    valid_error=[]
+    alpha=[0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]    
+    for a in alpha:
+        diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+        diabetes_reg = linear_model.Lasso(alpha=a, normalize=True)
+        diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+        diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+        diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+        train_error.append(mean_squared_error(diabetes_y_train, diabetes_y_train_pred))
+        test_error.append(mean_squared_error(diabetes_y_test, diabetes_y_test_pred))
+        kf=KFold(n=len(diabetes_X_train), n_folds=5, shuffle=True)
+#        print (kf)
+        mse=0
+        for train_indices, test_indices in kf:
+            #print(diabetes_X_train.shape, diabetes_X_test.shape, diabetes_y_train.shape, diabetes_y_test.shape)
+            #print(train_indices.shape,train_indices.shape)
+            diabetes_reg.fit(diabetes_X_train[train_indices], diabetes_y_train[train_indices])
+            #break
+            mse=mse+mean_squared_error(diabetes_y_train[test_indices], diabetes_reg.predict(diabetes_X_train[test_indices]))
+#        valid_error.append(mse)
+        valid_error.append(np.mean(mse)/5)
+        ###With Cross Validation
+#        cv_results=model_selection.cross_validate(diabetes_reg, diabetes_X_train, diabetes_y_train, cv=5)
+#        error.append(cv_results['test_score'])
+#        valid_error.append(np.mean(error))
+#        error.append(model_selection.cross_val_score(diabetes_reg, diabetes_X_train, diabetes_y_train, cv=5))    
+#        valid_error.append(1-np.mean(error))
+    
+    plt.subplot(the_grid[0,i])
+    plt.ylim((0,8000))
+    plt.suptitle('Training Error, Test Error, Validation Error and R2 Score wrt Alpha(LAsso Regression) on diabetes', fontsize=15)
+    plt.plot(alpha, train_error , color='blue',marker='.', label='Training Error')
+    plt.plot(alpha, test_error, color='red', marker='.',label='Test Error')
+    plt.plot(alpha, valid_error, 'r--', marker='.', label='Validation Error')
+    plt.xlabel('Alphas')
+    plt.ylabel('Error')
+    plt.title('Training=%2.2f' %x)
+    plt.legend()    
+    i=i+1
+
+        
+        
+fig=plt.figure(figsize=(15,7))
+train_size=[.99, .9, .8, .7]
+i=0
+for x in train_size:
+    train_error=[]
+    test_error=[]
+    R2_score=[]
+    alpha=[0.0001,0.001,0.01,0.1,1,1.5,2,3,4,5]    
+    for a in alpha:
+        diabetes_X_train, diabetes_X_test, diabetes_y_train, diabetes_y_test = model_selection.train_test_split(X, y, test_size=1-x,train_size = x,shuffle=True)
+        diabetes_reg = linear_model.Lasso(alpha=a, normalize=True)
+        diabetes_reg.fit(diabetes_X_train,diabetes_y_train)
+        diabetes_y_test_pred = diabetes_reg.predict(diabetes_X_test)
+        diabetes_y_train_pred = diabetes_reg.predict(diabetes_X_train)
+        R2_score.append(r2_score(diabetes_y_train, diabetes_y_train_pred))
+    
+    plt.subplot(the_grid[1,i])
+    plt.ylim((0,1))
+    plt.scatter(alpha, R2_score, color='black', label='R2 Score')
+    plt.xlabel('Alphas')
+    plt.ylabel('R2 Score')
+    plt.legend()
+    plt.title('Training=%2.2f' %x)
+    i=i+1
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    
